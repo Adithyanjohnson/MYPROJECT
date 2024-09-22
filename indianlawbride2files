@@ -1,0 +1,799 @@
+import json
+import os
+import getpass
+import matplotlib.pyplot as plt
+from rules import Lawdisplay
+
+
+# Utility function to clear the console
+def clear_console():
+    os.system("clear")  # For Windows
+
+# Class to represent an Advocate
+class Advocate:
+    def __init__(self, name, specialization, contact,experience):#name, specialization, contact, and experience are called attributes
+        self.name = name
+        self.specialization = specialization
+        self.contact = contact
+        self.experience = experience
+
+    def __str__(self):#he __str__ method in Python is used to define a human-readable string representation of an object
+        return (f"Advocate Name: {self.name}\n"
+                f"Specialization: {self.specialization}\n"
+                f"Contact: {self.contact}\n"
+                f"experience:{self.experience}")
+
+    def to_dict(self):
+        """Convert the Advocate object to a dictionary for easy JSON serialization"""#: JSON (JavaScript Object Notation) is a popular format for storing and transmitting data. Converting the object to a dictionary makes it easy to serialize the object into JSON format.
+        return {
+            "name": self.name,
+            "specialization": self.specialization,
+            "contact": self.contact,
+            "experience": self.experience  
+
+            
+        }
+
+# Admin class to manage advocate details
+class Admin:
+    def __init__(self):#Instance Reference: self allows access to the attributes and methods of the class within its own methods. When you create an object from a class, self refers to that specific object.
+        self.Advocates = []
+        self. advocates_added_count = 0  # Track how many advocates have been added
+        self.advocate_search_count = 0  # Track the number of times advocates were searched
+        self.request_count = 0
+
+    def save_advocates_to_file(self):#objects (instances)
+        """Save the list of advocates to a file"""
+        with open(r'C:\Users\DELL\Desktop\jsonadminstorage.json', 'w') as file:# writing. If the file already exists, its contents are truncated (i.e., deleted), and the file is overwritten. If the file does not exist, a new file is created.
+            json.dump([advocate.to_dict() for advocate in self.Advocates], file)#json.dump is a method in Python's json module used to serialize Python objects into JSON format and write them directly to a file. It's useful for saving data to a file in a standard JSON format
+                       #advocate is a object of self.advocate
+    def load_advocates_from_file(self):
+        """Load the list of advocates from a file"""
+        if os.path.exists(r'C:\Users\DELL\Desktop\jsonadminstorage.json'):
+            with open(r'C:\Users\DELL\Desktop\jsonadminstorage.json', 'r') as file:
+                advocate_list = json.load(file)
+                self.Advocates = []
+
+            # Iterate over each dictionary in the list
+            for a in advocate_list:#  a is used to safely fetch the value associated with the key.
+                # Extract values from the dictionary
+                name = a.get("name")
+                specialization = a.get("specialization")
+                contact = a.get("contact")
+                experience = a.get("experience")
+
+                # Create an Advocate object
+                advocate = Advocate(name, specialization, contact, experience)
+
+                # Add the Advocate object to the list
+                self.Advocates.append(advocate)
+
+    def add_advocate(self):
+        """Add a new advocate to the list"""
+        name = input("Enter Advocate Name: ")
+        specialization = input("Enter Specialization: ")
+        contact = input("Enter Contact Info: ")
+        experience = input("Enter the experience : ")
+        advocate = Advocate(name, specialization, contact,experience)
+        self.Advocates.append(advocate)
+        self.save_advocates_to_file()
+        self.advocates_added_count += 1
+
+    def print_advocates(self):
+        """Print all advocates with separation lines"""
+        print("List of Advocates:")
+        separator = "-" * 120
+        for advocate in self.Advocates:
+            print(advocate)
+            print(separator)
+
+    def view_advocates(self):
+        """View the list of advocates"""
+        self.load_advocates_from_file()
+        if not self.Advocates:
+            print("There are no advocates added currently.")
+        else:
+            clear_console()
+            print("----------------------------------------------------------List of Advocates---------------------------------------------------------")
+            self.print_advocates()
+
+    def admin_dashboard(self):
+        print("\n--- Admin Dashboard ---")
+        print(f"Total Advocates Added: {self.advocates_added_count}")
+        print(f"Total Advocate Searches: {self.advocate_search_count}")
+        print(f"Total Advocate Requests: {self.request_count}")
+        print(f"Total Advocates in System: {len(self.Advocates)}")
+        print("-" * 60)
+
+        # Create a bar chart using matplotlib with updated statistics
+        labels = ['Advocates Added', 'Advocates Searched', 'Advocates Requested']
+        values = [self.advocates_added_count, self.advocate_search_count, self.request_count]
+
+        plt.bar(labels, values, color=['green', 'black', 'blue'])
+        plt.title('Advocate Statistics')
+        plt.xlabel('Category')
+        plt.ylabel('Count')
+        plt.show()
+
+      
+
+    def admin_menu(self):
+        """Admin panel menu"""
+        while True:
+            self.load_advocates_from_file()#there have been changes to the advocate data (e.g., new advocates added or existing ones modified), loading the data from the file ensures that the menu reflects these changes.
+            print("-------------------------------------------------------------------------Admin-panel--------------------------------------------------------")
+            print("1. Add Advocate Details")
+            print("2. View Advocate Profile")
+            print("3. View advocate dashbord")
+            print("3. log out")
+            choice = input("Enter the option number you want to choose (1-3): ")
+
+            if choice == "1":
+                self.add_advocate()
+            elif choice == "2":
+                self.view_advocates()
+            elif choice == "3":
+                self.admin_dashboard()
+            elif choice == "4":
+                print("Logging out of Admin panel...")
+                break
+            else:
+                print("Invalid choice. Please try again.")
+    
+
+# User class to manage user operations such as sign-up and log-in
+class User:
+    def __init__(self,admin):
+        self.Users = {}  # Dictionary to store usernames and passwords
+        self.logged_in_user = None
+        self.admin = admin 
+    
+
+
+   
+    def search_advocates(self):
+         clear_console()
+         admin = Admin()  # Create an admin object
+         admin.load_advocates_from_file()  # Load advocates from file
+    
+         search_term = input("Enter Advocate Name, Specialization, or Experience to search: ").lower()
+         matching_advocates = []  # Create an empty list to store advocates that match the search term
+         advocate_search_count = 0  # Initialize the search count variable
+
+    # Go through each advocate in the list
+         for advocate in admin.Advocates:
+             if (search_term in advocate.name.lower() or
+             search_term in advocate.specialization.lower() or
+             search_term in advocate.experience.lower()):
+             # If it matches, add this advocate
+                matching_advocates.append(advocate)
+                self.admin.advocate_search_count += 1 # Increment the search count
+
+    # If there are any matching advocates
+             if matching_advocates:
+                print(f"Found {len(matching_advocates)} result(s):")
+            # Show each matching advocate
+             for advocate in matching_advocates:
+                 print(advocate)
+                 print("-" * 120)  # Divider between advocates for better readability
+             else:
+                print("No matching advocates found.")  # Message if no advocate matches the search term
+    def advocate_request_to_admin(self):
+        request = input("Enter 1 to send a request to join as an advocate: ")
+        if request == "1":
+            name = input("Enter your name: ")
+            specialization = input("Enter your specialization: ")
+            contact = input("Enter your contact info: ")
+            experience = input("Enter your experience: ")
+
+            advocate = Advocate(name, specialization, contact, experience)
+            print(f"Request sent to admin for {advocate.name} to join as an advocate.")
+            self.admin.request_count += 1
+
+
+
+    def user_menu(self):
+        """User menu"""
+        while True:
+            print("------------------------------------------------------------------------------------------------User-panel-----------------------------------------------------------")
+            print("1. Sign Up")
+            print("2. Log In")
+            print("3. Search Advocates")
+            print("4. Advocate Request to Join")
+            print("5. Go Back")
+            choice = input("Enter the suitable choice (1-3): ")
+
+            if choice == "1":
+                self.sign_up()
+            elif choice == "2":
+                self.log_in()
+            elif choice == "3":
+                self.search_advocates()
+            elif choice == "4":
+                self.advocate_request_to_admin()
+            elif choice == "5":
+                print("Returning to the main menu.")
+                break
+            else:
+                print("Invalid choice! Please try again.")
+
+    def sign_up(self):
+        """Sign up a new user"""
+        username = input("Enter Username: ")
+        if username in self.Users:
+            print("Username already exists! Try a different one.")
+        else:
+            password = input("Enter Password: ")
+            self.Users[username] = password  # Store username and password
+            print(f"User {username} signed up successfully!")
+
+    def log_in(self):
+        """Log in an existing user"""
+        username = input("Enter Username: ")
+        password = getpass.getpass("Enter Password: ") #getpass for hiding the password
+
+        if username in self.Users and self.Users[username] == password:
+            self.logged_in_user = username
+            print(f"User {username} logged in successfully!")
+            self.view_laws()  # Automatically direct the user to the View Laws page after login
+        else:
+            print("Invalid username or password.")
+
+    def view_laws(self):
+        """Display available laws after logging in"""
+        if not self.logged_in_user:
+            print("Please log in first.")
+            return
+
+        while True:
+            print("\nSelect a category:")
+            print("1. Traffic Laws")
+            print("2. Women Related Laws")
+            print("3. Cyber Crime Laws")
+            print("4. Log Out")
+            choice = input("Select your choice (1 to 4): ")
+
+            law_display = Lawdisplay()
+
+            
+
+            if choice == "1":
+                law_display.display_laws("Traffic Laws")
+            elif choice == "2":
+                law_display.display_laws("Women Related Laws")
+            elif choice == "3":
+                law_display.display_laws("Cyber Crime Laws")
+            elif choice == "4":
+                law_display.logged_in_user = None
+                print("Logged out successfully!")
+                break
+            else:
+                print("Invalid choice.")
+
+    
+
+            
+
+
+def main_menu():
+    """Main menu for the application"""
+    admin = Admin()
+    user = User(admin)
+
+    while True:
+        clear_console()
+        print("-------------------------------------------------------------------------Main Menu--------------------------------------------------------")
+        print("1. Admin ")
+        print("2. User ")
+        print("3. Exit")
+        choice = input("Enter your choice (1-3): ")
+
+        if choice == "1":
+            username = input("Enter Admin Username: ")
+            password = getpass.getpass("Enter Admin Password: ")
+            if username == "admin" and password == "admin123":
+                admin.admin_menu()
+            else:
+                print("Invalid Admin credentials!")
+        elif choice == "2":
+            user.user_menu()
+        elif choice == "3":
+            print("Exiting the application. Goodbye!")
+            break
+        else:
+            print("Invalid choice! Please try again.")
+
+# Run the main menu
+if __name__ == "__main__":
+    main_menu()
+
+
+
+
+
+
+
+
+
+
+
+
+
+twofiles file name rules------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+import os
+
+def clear_console():
+    os.system("clear")
+
+
+
+
+class Lawdisplay:
+    def display_laws(self, law_category):
+        """Display placeholder text for each law category"""
+        if law_category == "Traffic Laws":
+            print("\n------------------ Traffic Laws ------------------")
+            print("1. Speed Limit")
+            print("2. Drunk Driving")
+            print("3. Helmet For Two Wheelers")
+            print("4. Seat Belt Usage")
+            choose = int(input("Select your choice (1 to 4): "))
+            if choose == 1:
+                clear_console()
+                print("             -------------------------")
+                print("             *SPEED LIMIT LAW IN INDIA* ")
+                print("             --------------------------\n")
+                sectionA1 = "IPC Section 279 - Offense of Exceeding Speed Limit\n"
+                descriptionA1 = "The speed limit refers to the maximum legal speed at which a vehicle can travel on a particular road or in a specific area.\n\n" \
+                                  "Speed limits are set by the respective traffic authorities or government agencies\n" \
+                                  "and are designed to ensure the safety of all road users.\n\n" \
+                                  "Punishments and fines:\n\n" \
+                                  "1. Light Motor Vehicles: A fine of up to Rs. 1,000 for the\n" \
+                                  "  first offense and up to Rs. 2,000 for subsequent offenses.\n\n" \
+                                  "2.Medium Goods/Passenger Vehicles: A fine of up to Rs. 2,000 for the first offense \n" \
+                                  "  and up to Rs. 4,000 for subsequent offenses\n\n." \
+                                  "3.Heavy Goods/Passenger Vehicles: A fine of up to Rs. 4,000 for the first offense \n" \
+                                  "  and up to Rs. 8,000 for subsequent offenses."
+                print(sectionA1)
+                print(descriptionA1)                      
+
+                print("SPEED LIMITS IN INDIA:\n")
+                speed_limits = [
+                                "1. Residential areas: 50 km/h",
+                                "2. Urban roads: 60 km/h",
+                                "3. State highways: 80 km/h",
+                                "4. National highways: 100 km/h",
+                                "5. Expressways: 120 km/h"]
+                for i in speed_limits:
+                    print(i)
+
+            elif choose == 2:
+                 clear_console()
+                 print("             ----------------------")
+                 print("                 DRUNK N DRIVE  ")
+                 print("             ----------------------\n")
+                 sectionA2 = "Section 185: Driving by a Drunken Person or Under the Influence of Drugs\n"
+                 descriptionA2 = "Drunk driving refers to the act of operating a motor vehicle while under the influence of alcohol or drugs.\n" \
+                                    "When a person consumes alcohol or drugs, it impairs their judgment, coordination, reaction time, and overall ability to operate a vehicle safely.\n" \
+                                    "Driving under the influence poses a significant risk to the driver, passengers, pedestrians, and other road users.\n"
+
+                 punishmentsA2 = "Punishments:\n\n" \
+                                "Driving under the influence can have severe consequences, including heavy fines:\n" \
+                                "1. For the first offense: A fine of Rs. 10,000 and/or imprisonment of up to 6 months.\n" \
+                                "2. For subsequent offenses within three years: A fine of Rs. 15,000 and/or imprisonment of up to 2 years.\n" \
+                                "Additionally, the offender's driving license is suspended for a minimum period of 6 months."
+
+                 print(sectionA2)
+                 print(descriptionA2)
+                 print(punishmentsA2)
+
+            elif choose == 3:
+                clear_console()
+                print("             -------------------------")
+                print("              HELMET FOR TWO WHEELERS ")
+                print("             -------------------------\n")
+                sectionA3 = "Section 129: Wearing Protective Headgear (Helmet)"
+                descriptionA3 = "Helmet for Two Wheelers refers to the mandatory requirement for riders and pillion passengers of motorcycles \n" \
+                                  "or two-wheelers to wear protective headgear, commonly known as a helmet.\n\n" \
+                                  "Wearing a helmet is a crucial safety measure to protect the head and reduce the risk of severe head injuries \n" \
+                                  "in the event of a road accident.\n\n"
+
+                punishmentsA3 = "Punishments and Fines:\n\n" \
+                                  "Not wearing a helmet in India can lead to penalties. The penalties for not using a helmet include:\n" \
+                                  "1. For the first offense: A fine of Rs. 1,000.\n" \
+                                  "2.For subsequent offenses: A fine of Rs. 2,000."
+                print(sectionA3)
+                print(descriptionA3)
+                print(punishmentsA3)
+
+            elif choose == 4:
+                clear_console()
+                print("             -------------------------")
+                print("                * SEAT BELT USAGE * ")
+                print("             -------------------------\n")
+                sectionA4 = "Section 138: Mandatory Use of Seat Belts"
+                descriptionA4 = "Seat belt usage refers to the practice of wearing a seat belt while traveling in a motor vehicle.\n" \
+                                        "A seat belt is a safety device designed to secure occupants in their seats and restrain their movement \n" \
+                                        "in the event of a collision or sudden stop.\n\n" \
+                                        "It is a crucial safety measure that helps protect passengers from serious injuries and fatalities during a road accident.\n"
+
+                punishmentsA4 = "Punishments and Fines:\n\n" \
+                                        "Not wearing a seat belt in India can lead to penalties. The penalties for not using a seat belt include:\n" \
+                                        "1. For the first offense: A fine of Rs. 1,000.\n" \
+                                        "2. For subsequent offenses: A fine of Rs. 2,000."
+                print(sectionA4)
+                print(descriptionA4)
+                print(punishmentsA4)
+            
+
+            else:
+                 print("Invalid option")
+            
+
+
+
+
+        elif law_category == "Women Related Laws":
+            print("\n------------------ Women Related Laws ------------------")
+            print("1. The Sexual Harassment Laws IPC 354 A")
+            print("2. Use of Criminal Force to Women with Intent to Disrobe IPC 354 B")
+            print("3. Voyeurism IPC 354 C")
+            print("4. Stalking IPC 354 D")
+            choose = int(input("Select your choice (1 to 4): "))
+            if choose == 1:
+                clear_console()
+                print("             ------------------------------------             ")
+                print("              *THE SEXUAL Harassment LAW IN INDIA*               ")
+                print("             ------------------------------------             \n")
+                sectionB1 = "IPC Section 354A"
+                descriptionB1 = (
+                    "************************DESCRIPTION*****************************\n\n"
+                    "1.A man committing any of the following acts—\n\n\n"
+                    "(i)physical contact and advances involving unwelcome and explicit sexual overtures; or\n\n"
+                    "(ii)a demand or request for sexual favours; or\n\n"
+                    "(iii)showing pornography against the will of a woman; or\n\n"
+                    "(iv)making sexually coloured remarks, shall be guilty of the offence of sexual harassment1\n\n\n" 
+                    "2.Any man who commits the offence specified in clause (i) or clause (ii) or clause (iii) of sub-section (1)\n\n" 
+                    "shall be punished with rigorous imprisonment for a term which may extend to three years, or with fine, or with both.\n\n\n"
+                    "3.Any man who commits the offence specified in clause (iv) of sub-section (1) shall be punished with imprisonment of\n\n" 
+                    "either description for a term which may extend to one year, or with fine, or with both\n"
+                 )
+                PunishmentB1 = (
+                    "__________________________________________________________________________________________________________\n"
+                    "|OFFENCE                                                                       | PUNISHMENT               |\n"
+                    "|---------------------------------------------------------------------------------------------------------|\n"
+                    "|1.Sexual harassment of the nature of unwelcome physical contact and advances  |Upto 3 years or Fine      |\n" 
+                    "|  or a demand or request for sexual favours or showing pornography            |or Both                   |\n"
+                    "|---------------------------------------------------------------------------------------------------------|\n"
+                    "|2.Sexual harassment of the nature of making sexually coloured remark          |Upto 1 year or Fine       |\n" 
+                    "|                                                                              |or Both                   |\n"
+                    "|_________________________________________________________________________________________________________|\n\n"
+               )
+                bailB1= (
+                    "|         | Cognizance | Bail      | Triable By     |\n"
+                    "|---------|------------|-----------|----------------|\n"
+                    "| Entry 1 | Cognizable | Bailable  | Any Magistrate |\n"
+                    "| Entry 2 | Cognizable | Bailable  | Any Magistrate |\n\n"
+
+                )
+                furtherB1= (
+                "1.Documentation: Keep detailed records of the incidents, including dates, times, locations, descriptions, and any witnesses present. This documentation can be valuable if you decide to take legal action.\n\n"
+                "2.Consultation: Seek legal advice from an attorney who specializes in sexual harassment cases. They can provide guidance on your rights, potential legal actions, and the specific steps you should take.\n\n"
+                "3.Reporting: Consider reporting the harassment to the appropriate authorities, such as the police or your workplace's human resources department. Follow the required procedures and provide them with all the relevant information and evidence you have gathered.\n\n"
+                "4.Confidentiality: Understand the confidentiality policies and procedures involved in reporting and legal proceedings. Discuss this aspect with your attorney to ensure your privacy is protected as much as possible.\n\n"
+                "5.Legal action: Based on the advice of your attorney, you may decide to take legal action, such as filing a lawsuit against the perpetrator. Your attorney will guide you through the legal process, including gathering evidence, filing necessary documents, and representing you in court if required.\n\n"
+                "6.Follow legal procedures: Cooperate with law enforcement, legal professionals, and any relevant authorities involved in your case. Comply with the legal procedures and provide accurate information when required.\n\n"
+                 )
+                print(sectionB1)
+                print(descriptionB1)
+                print(PunishmentB1)
+                print(bailB1)
+                print(furtherB1)
+            
+            
+
+            elif choose == 2:
+                clear_console()
+                print("         -----------------------------------------------------      ")
+                print("         Use of Criminal force to Women with Intent to Disrobe ")
+                print("         ------------------------------------------------------      \n")
+                sectionB2 = "IPC Section 354B"
+                descriptionB2 = (
+                     "********************  DESCRIPTION  ***************************\n\n"
+                     "Any man who assaults or uses criminal force to any woman or abets such act with the intention of disrobing1\n"
+                     "compelling her to be naked, shall be punished with imprisonment of either description for a term which shall not be less than three years but which may extend to seven years, and shall also be liable to fine.\n"
+                     "\n"
+                )
+                punishmentB2 = (
+                 "__________________________________________________________________________________________________________\n"
+                "|OFFENCE                                                                       | PUNISHMENT               |\n"
+                "|---------------------------------------------------------------------------------------------------------|\n"
+                "| Criminal force to woman with intent to disrobe                               |     3 to 7 years + Fine  |\n"
+                "|---------------------------------------------------------------------------------------------------------|\n"
+   
+                 )
+                bailB2 = (
+                " ____________________________________________________\n"
+                "|         | Cognizance | Bail       | Triable By     |\n"
+                "|---------|------------|------------|----------------|\n"
+                "| Entry 1 | Cognizable |Non-bailable| Any Magistrate |\n"
+                "|_________|____________|____________|________________|"
+                )
+                furtherB2 = (
+
+               "1.Ensure Safety: The first priority is to ensure personal safety.If the immediate threat is still present, the affected person should\n"
+               "  try to find a safe place and remove themselves from the dangerous situation.\n\n"
+               "2.Seek Medical Attention: If there are any physical injuries resulting from the assault, it is crucial to seek medical attention promptly\n."
+               "  This will help ensure proper care for any injuries, document evidence, and assess any potential health risks.\n\n"
+               "3.Contact Law Enforcement: It is important to report the incident to the police as soon as possible. Contact the local law enforcement agency  and provide them with\n"
+                "  a detailed account of what happened. Be prepared to provide any information or evidence that may assist in the investigation\n\n"
+               "4.Preserve Evidence: If possible, try to preserve any evidence related to the incident. This may include photographs of injuries, torn clothing, or any objects or\n"
+               "   materials involved. Such evidence can be crucial during the investigation and legal proceedings\n\n"
+               "5.Seek Legal Advice: It is advisable to consult with a legal professional who specializes in criminal law or victims' rights. They can provide guidance on the \n"
+               "   legal options available and help navigate the legal process.\n\n"
+               "6.Restraining Order: If the victim feels threatened or fears for their safety, they can consider seeking a restraining order or protection order against the perpetrator. \n"
+               "    This can legally require the offender to stay away from the victim and provide an additional layer of protection.\n\n"
+               "\n\n"
+               )
+                print(sectionB2)
+                print(descriptionB2)
+                print(punishmentB2)
+                print(bailB2)
+                print(furtherB2)
+
+            
+  
+            elif choose == 3:
+                clear_console()
+                print("         ----------------------------    ")
+                print("                   Voyeurism      ")
+                print("         ----------------------------  \n")
+
+                sectionB3 = "IPC Section 354c"
+                descriptionB3 = (
+
+                "*********DESCRIPTION**********\n\n"
+                "Any man who watches, or captures the image of a woman engaging in a private act in circumstances where she would usually "
+                "have the expectation of not being observed either by the perpetrator or by any other person at the behest of the perpetrator "
+                "or disseminates such image1 shall be punished on first conviction with imprisonment of either description for a term which "
+                "shall not be less than one year, but which may extend to three years, and shall also be liable to fine, and be punished on "
+                "a second or subsequent conviction, with imprisonment of either description for a term which shall not be less than three "
+                "years, but which may extend to seven years, and shall also be liable to fine.\n\n"
+                "Explanations\n\n"
+                "For the purpose of this section, 'private act' includes an act of watching carried out in a place which, in the circumstances, "
+                "would reasonably be expected to provide privacy and where the victim's genitals, posterior or breasts are exposed or covered "
+                "only in underwear; or the victim is using a lavatory; or the victim is doing a sexual act that is not of a kind ordinarily done in public.\n"
+                "Where the victim consents to the capture of the images or any act, but not to their dissemination to third persons and where "
+                "such image or act is disseminated, such dissemination shall be considered an offence under this section.\n"
+                 )
+
+                punishmentB3 = (
+
+               "|OFFENCE                                                    | PUNISHMENT                                                |\n"
+               "|-----------------------------------------------------------|-----------------------------------------------------------|\n"
+               "| Voyeurism                                                 |  1 to 3 years + Fine for first conviction                 |\n"
+               "|                                                           |-----------------------------------------------------------|\n"                                                                                                                       
+               "|                                                           |  3 to 7 years + Fine for second or subsequent conviction  |\n"
+               "|____________________|____________________|\n"
+                )
+
+                bailB3 = (
+               " __________________\n"
+               "|         | Cognizance | Bail       | Triable By     |\n"
+               "|---------|------------|------------|----------------|\n"
+               "| Entry 1 | Cognizable | bailable   | Any Magistrate |\n"
+               "| Entry 2 | Cognizable |Non-bailable| Any Magistrate |\n"
+                "------------------------------------------------------"
+                )
+
+                print(sectionB3)
+                print(descriptionB3)
+                print(punishmentB3)
+                print(bailB3)
+          
+  
+            elif choose == 4:
+                clear_console()
+                print("         ---------------------------------     ")
+                print("                     Stalking          ")
+                print("         ---------------------------------    \n")
+                sectionB4 = "IPC Section 354D"
+                descriptionB4 = (
+
+                "************************DESCRIPTION*****************************\n\n"
+                "Any man who\n"
+                "follows a woman and contacts, or attempts to contact such woman to foster personal interaction repeatedly despite a clear indication of disinterest by such woman; or\n"
+                "monitors the use by a woman of the internet, email or any other form of electronic communicationcommits the offence of stalking1; \n"
+                "Provided that such conduct shall not amount to stalking if the man who pursued it proves that—\n"
+                "it was pursued for the purpose of preventing or detecting crime and the man accused of stalking had been entrusted with the responsibility of prevention and detection of crime by the State; or\n"
+                "it was pursued under any law or to comply with any condition or requirement imposed by any person under any law; or\n"
+                "in the particular circumstances such conduct was reasonable and justified.\n"
+
+                      )
+                punishmentB4 = (
+             "__________________________________________________________________________________________________________\n"
+            "|OFFENCE                                          |                              PUNISHMENT               |\n"
+            "|-------------------------------------------------|-------------------------------------------------------|\n"
+            "| Stalking                                        |Upto 3 years + Fine for first conviction               |\n"
+            "|                                                 |Upto 5 years + Fine for second or subsequent conviction|\n"
+            "|                                                 |                                                       |\n"
+            "|---------------------------------------------------------------------------------------------------------|\n"
+              )
+
+         
+                bailB4 = (
+            " ____________________________________________________"    
+            "|         | Cognizance | Bail       | Triable By     |\n"
+            "|---------|------------|------------|----------------|\n"
+            "| Entry 1 | Cognizable | bailable   | Any Magistrate |\n"
+            "| Entry 2 | Cognizable |Non-bailable| Any Magistrate |\n"
+            "|____________________________________________________|"
+             )
+
+
+                print(sectionB4)
+                print(descriptionB4)
+                print(punishmentB4)
+                print(bailB4)
+            
+
+            else:
+                print("Invalid option")
+
+
+        elif law_category == "Cyber Crime Laws":
+            print("\n------------------ Cyber Crime Laws ------------------")
+            print("1. Online Financial Frauds")
+            print("2. Online Harassment and Cyberbullying")
+            print("3. Ransomware Attacks")
+            print("4. Forgery")
+            choose = int(input("Select your choice (1 to 4): "))
+            if choose == 1:
+                clear_console()
+                print("         -------------------------------------     ")
+                print("         Online Financial Frauds LAWS IN INDIA" )
+                print("         --------------------------------------     \n")
+                descriptionC1 =( "In India, online financial frauds are governed by various laws and regulations that address cybercrimes\n"
+                             "and financial frauds. Some key legislations include:\n\n" 
+              "1. Information Technology Act, 2000: This act provides legal recognition to electronic transactions and deals with cyber offenses.\n\n" 
+              "2. Indian Penal Code (IPC): Sections such as 419, 420, 463, 464, 465, 468, and 471 of the IPC address different forms of financial frauds.\n\n" 
+              "3. Prevention of Money Laundering Act, 2002: This act deals with offenses related to money laundering, often associated with financial frauds.\n" 
+              "4. Reserve Bank of India (RBI) Guidelines: RBI issues guidelines to combat online financial frauds and protect customers' interests.\n\n" 
+              "5. Consumer Protection Act, 2019: This act provides protection to consumers against fraudulent activities by businesses or service providers.\n\n"
+                )
+                prevention_methodsC1 = "Prevention Methods:\n" \
+                            "a) Be cautious while sharing personal and financial information online.\n" \
+                            "b) Use strong, unique passwords and enable two-factor authentication.\n" \
+                            "c) Keep software and security systems up to date.\n" \
+                            "d) Avoid clicking on suspicious links or downloading files from unknown sources.\n" \
+                            "e) Regularly monitor financial transactions and report any unauthorized activity to the bank or relevant authorities.\n\n"
+
+                actions_after_fraudC1 = "Actions After Encountering Online Financial Fraud:\n" \
+                            "1. Immediately contact your bank or financial institution to report the fraud and block any compromised accounts.\n" \
+                            "2. File a complaint with the cybercrime cell or police station and provide all necessary details and evidence.\n" \
+                            "3. Keep records of communication with the bank, authorities, and any related documents for future reference.\n" \
+                            "4. Consider seeking legal advice to understand your rights and explore options for recovering any losses.\n"
+            
+                print(descriptionC1)
+                print(prevention_methodsC1)
+                print(actions_after_fraudC1)
+            
+
+
+
+            
+
+            elif choose == 2:
+                clear_console()
+                print("         -------------------------------------     ")
+                print("          Online Harassment and Cyberbullying" )
+                print("         --------------------------------------     \n")
+                descriptionC2 =( "In India, online harassment and cyberbullying are addressed by specific laws and regulations.\n"
+                            " Some key legislations include:\n\n"
+              "1. Information Technology Act, 2000: This act deals with cyber offenses, including online harassment and cyberbullying.\n"
+               " Sections such as 66A, 66C, 66D, 67, and 67A are relevant.\n\n" 
+              "2. Indian Penal Code (IPC): Sections such as 354A, 354D, and 509 of the IPC provide punishments for offenses related to"
+               "  online harassment and cyberbullying.\n\n" 
+              "3. Protection of Children from Sexual Offences (POCSO) Act, 2012: This act offers protection to children against various\n"
+               " forms of sexual abuse, including online harassment and cyberbullying.\n\n" 
+              "4. Juvenile Justice (Care and Protection of Children) Act: This act focuses on the care and protection of children,\n"
+               " including provisions related to online harassment and cyberbullying.\n\n"
+               )
+                prevention_methodsC2 = "Prevention Methods:\n" \
+                            "- Be mindful of your online behavior and treat others with respect and empathy.\n" \
+                            "- Think before sharing or posting anything online, as it can have lasting consequences.\n" \
+                            "- Protect your personal information and use privacy settings on social media platforms.\n" \
+                            "- Report and block individuals engaging in online harassment or cyberbullying.\n" \
+                            "- Educate yourself and others about safe internet practices, including the responsible use of social media.\n"
+
+                actions_afterC2 = "Actions After Encountering Online Harassment or Cyberbullying:\n" \
+                        "- Document and preserve evidence of the harassment or cyberbullying, such as screenshots or messages.\n" \
+                        "- Report the incident to the respective platform or social media website.\n" \
+                        "- Reach out to trusted individuals for support, such as friends, family, or professionals.\n" \
+                        "- Consider filing a complaint with the cybercrime cell or local law enforcement authorities.\n" \
+                        "- If the harassment is severe or persistent, consult legal professionals to explore legal remedies.\n"
+                print( descriptionC2)
+                print(prevention_methodsC2)
+                print(actions_afterC2)
+            
+
+
+
+
+
+            elif choose == 3:
+                clear_console()
+                print("           ---------------------------------      ")
+                print("           Ransomware Attacks LAWS IN INDIA")
+                print("           ---------------------------------      /n")
+                descriptionC3 =(
+            "Ransomware attacks are a form of cybercrime where malicious software encrypts a victim's data and demands a ransom to restore access.\n"
+            "In India, the legal framework for addressing ransomware attacks includes:\n\n" 
+              "1. Information Technology Act, 2000: The Information Technology Act, 2000, is the primary legislation governing cybercrimes in India.\n"
+               "  It provides provisions to deal with various cyber offenses, including unauthorized access, computer-related offenses, and data theft.\n\n" \
+              "2. Indian Penal Code (IPC): Certain sections of the Indian Penal Code also apply to ransomware attacks, such as:\n" \
+              "   - Section 43: Punishment for unauthorized access to computer systems.\n" \
+              "   - Section 66C: Punishment for identity theft.\n" \
+              "   - Section 66F: Punishment for cyberterrorism.\n" \
+              "   - Section 384: Punishment for extortion.\n" \
+              "3. Prevention of Money Laundering Act, 2002: In cases where the ransom is paid and involves money laundering, the Prevention of Money Laundering Act, 2002, can be applicable.\n" \
+              "4. Computer Emergency Response Team (CERT-In): CERT-In is the national agency for responding to and coordinating the response to cyber incidents in India.\n"
+               )
+                prevention_methodsC3 = "Prevention Methods:\n" \
+                            "- Keep your operating system, software, and antivirus programs up to date.\n" \
+                            "- Regularly backup your important data and store it securely offline.\n" \
+                            "- Be cautious when opening email attachments or clicking on suspicious links.\n" \
+                            "- Use strong and unique passwords for all your online accounts.\n" \
+                            "- Educate yourself and your employees about cybersecurity best practices.\n"
+
+                actions_afterC3 = "Actions After Encountering a Ransomware Attack:\n" \
+                        "- Isolate the infected computer from the network to prevent further spread.\n" \
+                        "- Report the incident to your organization's IT department or a cybersecurity professional.\n" \
+                        "- Do not pay the ransom, as there is no guarantee that your data will be restored.\n" \
+                        "- Contact the appropriate authorities, such as CERT-In or local law enforcement, to report the incident.\n" \
+                        "- Restore your systems from backups and strengthen your cybersecurity measures.\n"
+                print(descriptionC3)
+                print(prevention_methodsC3 )
+                print( actions_afterC3)
+            
+            
+
+
+
+
+            elif choose == 4:
+                clear_console()
+                print("         -------------------------------------------     ")
+                print("                           Forgery")
+                print("         --------------------------------------------     \n")
+                sectionC4 = "IPC 469"
+
+                descriptionC4 = (
+                "Whoever commits forgery, intending that the document or electronic record1 forged shall harm the reputation of any party, or knowing \n"
+                "that it is likely to be used for that purpose, shall be punished with imprisonment of either description for a term which may extend to \n"
+                "three years, and shall also be liable to fine."
+                 )
+                punishmentC4 = (
+                  "_______________________________________________________________________________________________________________________\n"
+                  "|OFFENCE                                                    | PUNISHMENT                                                |\n"
+                  "|-----------------------------------------------------------|-----------------------------------------------------------|\n"
+                  "|Forgery for the purpose of harming the reputation of any   | 3 Years + Fine                                            |\n"        
+                  "|person or knowing that it is likely to be used for that    |                                                           |\n"
+                  "|purpose                                                    |                                                           |\n"                                                                                                                         
+                  "|___________________________________________________________|___________________________________________________________|\n"
+                   )
+                bailC4 = (
+                  " ______________________________________________"    
+                 "| Cognizance | Bail       | Triable By         |\n"
+                 "|------------|------------|--------------------|\n"
+                 "| Cognizable | bailable   |Magistrate 1st class|\n"
+                 "|______________________________________________|"
+                        )
+                print(sectionC4)
+                print(descriptionC4)
+                print(punishmentC4)
+                print(bailC4)    
+            else:
+                print("Invalid option")
